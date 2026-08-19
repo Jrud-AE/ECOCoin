@@ -1,0 +1,6 @@
+@EcoCoinAPI_HostAddress = http://localhost:5082
+
+GET {{EcoCoinAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
