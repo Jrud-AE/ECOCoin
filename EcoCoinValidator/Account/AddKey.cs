@@ -13,8 +13,7 @@ namespace EcoCoinValidator.Account
         public static bool Validate(TransactionRequest TranReq, byte[] TransactionSignature)
         {
             bool Approval = false;
-
-            //CHECK 1: Verify that the transaction was signed by the suggested signer
+            
             AccountDetails SignerAccount = new AccountDetails(TranReq.TransactionSignerID);
 
             KeyPair ValidKeyPair = null;
@@ -32,13 +31,10 @@ namespace EcoCoinValidator.Account
                 }
             }
 
-            if (ValidKeyPair != null)
+            //CHECK 1: Verify that the signing key has permission to create keys
+            if (ValidKeyPair.Permissions.KeyCreationPermission)
             {
-                //CHECK 2: Verify that the signing key has permission to create keys
-                if (ValidKeyPair.Permissions.KeyCreationPermission)
-                {
-                    Approval = true;
-                }
+                Approval = true;
             }
 
             return Approval;

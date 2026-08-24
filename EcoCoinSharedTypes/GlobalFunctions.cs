@@ -30,5 +30,22 @@ namespace EcoCoinSharedTypes
         {
             return Convert.ToHexString(HashFile(FilePath));
         }
+
+        public static byte[] GenerateCryptoHashForObject(object obj, Guid SigningAccount = default, int AccountKeyID = -1)
+        {
+            RSA TKey = RSA.Create();
+
+            if (SigningAccount == default)
+            {
+                SigningAccount = GlobalVars.LocalSigningAccountID;
+                AccountKeyID = GlobalVars.LocalSigningKeyID;
+            }
+
+            AccountDetails SigningAccountDetails = new AccountDetails(SigningAccount);
+
+            TKey.ImportFromPem(SigningAccountDetails.ApprovedKeys[AccountKeyID].PrivateKey.ToCharArray());
+
+            return TKey.SignData(GlobalFunctions.SerializeObjectToByteArray(obj), HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+        }
     }
 }

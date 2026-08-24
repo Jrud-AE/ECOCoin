@@ -15,6 +15,14 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "WalletApps", "WalletApps", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EcoWallet", "EcoWallet\EcoWallet.csproj", "{400A4AB0-2171-450E-8109-B122786B17E8}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ValidatorSocketServer", "ValidatorSocketServer", "{DF2130A6-5CBD-4D42-B980-822158995F2C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EcoCoinValidatorUI", "EcoCoinValidatorUI\EcoCoinValidatorUI.csproj", "{0B380EDF-21F5-4CC9-8A30-6A976E38C3A8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ValidatorSocketServer", "ValidatorSocketServer\ValidatorSocketServer.csproj", "{B3B1F448-ED13-4E30-99AA-FC40E9CE27A0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ValidatorSocketServerUI", "ValidatorSocketServerUI\ValidatorSocketServerUI.csproj", "{C9C8579C-2AC2-4A7C-824F-381586AC5EE2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -35,8 +43,21 @@ Global
 		{593F7B14-CB5B-4AF6-9479-0858EF5698AC}.Release|Any CPU.Build.0 = Release|Any CPU
 		{400A4AB0-2171-450E-8109-B122786B17E8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{400A4AB0-2171-450E-8109-B122786B17E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{400A4AB0-2171-450E-8109-B122786B17E8}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
 		{400A4AB0-2171-450E-8109-B122786B17E8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{400A4AB0-2171-450E-8109-B122786B17E8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0B380EDF-21F5-4CC9-8A30-6A976E38C3A8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0B380EDF-21F5-4CC9-8A30-6A976E38C3A8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0B380EDF-21F5-4CC9-8A30-6A976E38C3A8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0B380EDF-21F5-4CC9-8A30-6A976E38C3A8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B3B1F448-ED13-4E30-99AA-FC40E9CE27A0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B3B1F448-ED13-4E30-99AA-FC40E9CE27A0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B3B1F448-ED13-4E30-99AA-FC40E9CE27A0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B3B1F448-ED13-4E30-99AA-FC40E9CE27A0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C9C8579C-2AC2-4A7C-824F-381586AC5EE2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C9C8579C-2AC2-4A7C-824F-381586AC5EE2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C9C8579C-2AC2-4A7C-824F-381586AC5EE2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C9C8579C-2AC2-4A7C-824F-381586AC5EE2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -44,5 +65,8 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{3F84C49F-B8D4-4A38-B9D4-056EB69D9C42} = {8FB3A654-C4F2-40A1-951C-E10FB44B377C}
 		{400A4AB0-2171-450E-8109-B122786B17E8} = {291F676F-8EA2-44E4-901A-0EE7F0EBF3D0}
+		{0B380EDF-21F5-4CC9-8A30-6A976E38C3A8} = {8FB3A654-C4F2-40A1-951C-E10FB44B377C}
+		{B3B1F448-ED13-4E30-99AA-FC40E9CE27A0} = {DF2130A6-5CBD-4D42-B980-822158995F2C}
+		{C9C8579C-2AC2-4A7C-824F-381586AC5EE2} = {DF2130A6-5CBD-4D42-B980-822158995F2C}
 	EndGlobalSection
 EndGlobal

@@ -6,26 +6,21 @@ using System.Text;
 using System.Threading.Tasks;
 using EcoCoinSharedTypes;
 using EcoCoinValidator.Account;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace EcoCoinValidator
 {
-    internal class Controller
+    public class Controller
     {
-        public bool ValidateTransaction(TransactionRequest TranReq, byte[] TransactionSignature)
+        MessageReceiver MR;
+
+        public Controller()
         {
-            bool Approval = false;
-
-            switch (TranReq.RequestType)
-            {
-                case RequestType.CreateAccount:
-                    Approval = AccountCreation.Validate(TranReq, TransactionSignature);
-                    break;
-                case RequestType.AddKey:
-                    Approval = AddKey.Validate(TranReq, TransactionSignature);
-                    break;
-            }
-
-            return Approval;
+            MR = new MessageReceiver();
         }
+
+       
+
+
     }
 }

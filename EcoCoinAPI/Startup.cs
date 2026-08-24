@@ -14,7 +14,17 @@ namespace EcoCoinAPI
 
         public static void SetGlobalVars()
         {
-            GlobalVars.AccountStoragePath = "G:\\EcoCoinData\\ChainData\\Accounts\\";
+            if (System.Diagnostics.Debugger.IsAttached)
+            {
+                GlobalVars.AccountStoragePath = "G:\\EcoCoinData\\ChainData\\Accounts\\";
+            }
+            else
+            {
+                GlobalVars.AccountStoragePath = "C:\\EcoCoinData\\ChainData\\Accounts\\";
+            }
+
+            GlobalVars.LocalSigningAccountID = Guid.Parse("086e33a8-d884-4b6f-ac37-5afd81091807");
+            GlobalVars.LocalSigningKeyID = 0;
         }
     }
 }
