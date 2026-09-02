@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="EcoWallet.CreateAccountPage"
+             Title="ECO Wallet - Create Account">
+    <ScrollView>
+        <VerticalStackLayout>
+            <Label Text="Add Account" VerticalOptions="Center" HorizontalOptions="Center" Style="{StaticResource Headline}" />
+
+            <Label Text="Create a new ECO account with a new balance on this device." VerticalOptions="Center" HorizontalOptions="Center" Style="{StaticResource SubHeadline}" />
+
+            <Grid WidthRequest="400" HeightRequest="60" Margin="0,20,0,0">
+                <Label Text="Account Name" />
+                <Entry Placeholder="New ECO Account Name" x:Name="txtAccountName" VerticalOptions="Start" HorizontalOptions="Center" WidthRequest="400" Margin="0,20,0,0" />
+            </Grid>
+
+            <Grid WidthRequest="400" HeightRequest="400" Margin="0,20,0,0">
+                <Label Text="Private Key" />
+                <Editor x:Name="txtPrivateKey" WidthRequest="400" HeightRequest="380" HorizontalOptions="Center" Margin="0,23,0,0" IsReadOnly="True" />
+            </Grid>
+            <Button Text="Generate New Private Key" WidthRequest="200" Margin="0,20,0,0" x:Name="btnRegenerate" Clicked="btnRegenerate_Clicked"/>
+
+            <Button Text="Create Account" x:Name="btnCreateAccount" WidthRequest="400" Clicked="btnCreateAccount_Clicked" Margin="0,20,0,20" ></Button>
+
+            <Label Text="OR" VerticalOptions="Center" HorizontalOptions="Center" Margin="0,0,0,20"></Label>
+            
+            <Button Text="Import Account with Private Key" WidthRequest="400" Margin="0,0,0,20" x:Name="btnImport"></Button>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

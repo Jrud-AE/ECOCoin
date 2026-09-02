@@ -68,4 +68,10 @@
 	  <ProjectReference Include="..\EcoCoinSharedTypes\EcoCoinSharedTypes.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <MauiXaml Update="CreateAccountPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	</ItemGroup>
+
 </Project>

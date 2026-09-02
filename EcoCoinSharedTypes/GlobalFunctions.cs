@@ -37,7 +37,7 @@ namespace EcoCoinSharedTypes
 
             if (SigningAccount == default)
             {
-                SigningAccount = GlobalVars.LocalSigningAccountID;
+                SigningAccount = GlobalVars.AEOfficialServerAccount;
                 AccountKeyID = GlobalVars.LocalSigningKeyID;
             }
 
@@ -46,6 +46,11 @@ namespace EcoCoinSharedTypes
             TKey.ImportFromPem(SigningAccountDetails.ApprovedKeys[AccountKeyID].PrivateKey.ToCharArray());
 
             return TKey.SignData(GlobalFunctions.SerializeObjectToByteArray(obj), HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+        }
+
+        public static string GenerateCryptoHashForObjectAsString(object obj, Guid SigningAccount = default, int AccountKeyID = -1)
+        {
+            return Convert.ToHexString(GenerateCryptoHashForObject(obj, SigningAccount, AccountKeyID));
         }
     }
 }

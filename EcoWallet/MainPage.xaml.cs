@@ -1,4 +1,6 @@
-﻿namespace EcoWallet
+﻿using EcoCoinSharedTypes;
+
+namespace EcoWallet
 {
     public partial class MainPage : ContentPage
     {
@@ -7,6 +9,29 @@
         public MainPage()
         {
             InitializeComponent();
+
+            if (GlobalVars.ECOWalletConfiguration.Accounts.Count > 0)
+            {
+                lblAccountNumber.Text = "Account: " + GlobalVars.ECOWalletConfiguration.Accounts[0].AccountName + "(" + GlobalVars.ECOWalletConfiguration.Accounts[0].AccountID.ToString() + ")";
+            }
+            else
+            {
+                Shell.Current.GoToAsync("CreateAccountPage");
+                //GlobalFunctions.NavigateToPageAndDropNavigation("CreateAccountPage");
+            }
+        }
+
+        private void OnPageRegainFocus(object sender, EventArgs e)
+        {
+            if (GlobalVars.ECOWalletConfiguration.Accounts.Count > 0)
+            {
+                lblAccountNumber.Text = "Account: " + GlobalVars.ECOWalletConfiguration.Accounts[0].AccountName + "(" + GlobalVars.ECOWalletConfiguration.Accounts[0].AccountID.ToString() + ")";
+            }
+            else
+            {
+                Shell.Current.GoToAsync("CreateAccountPage");
+                //GlobalFunctions.NavigateToPageAndDropNavigation("CreateAccountPage");
+            }
         }
 
         private void OnCounterClicked(object sender, EventArgs e)

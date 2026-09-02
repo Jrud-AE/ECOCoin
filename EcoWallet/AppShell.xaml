@@ -8,8 +8,9 @@
     Title="EcoWallet">
 
     <ShellContent
-        Title="Home"
+        Title="ECO Wallet"
         ContentTemplate="{DataTemplate local:MainPage}"
-        Route="MainPage" />
+        Route="MainPage"
+        />
 
 </Shell>

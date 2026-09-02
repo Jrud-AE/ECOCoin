@@ -1,4 +1,5 @@
-﻿using System;
+﻿using EcoCoinSharedTypes;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -11,18 +12,20 @@ namespace ValidatorSocketServer
     internal class Validator
     {
         private Socket ValidatorSocket;
-        private string IPAddress;
-        private string Country;
-        private string RegionName;
-        private string City;
-        private string PostalCode;
-        private string Lat;
-        private string Lon;
-        private string ISP;
-        private bool Mobile;
-        private bool Proxy;
-        private bool Hosted;
+        private Guid gValidatorID;
+        private string sIPAddress;
+        private string sCountry;
+        private string sRegionName;
+        private string sCity;
+        private string sPostalCode;
+        private string sLat;
+        private string sLon;
+        private string sISP;
+        private bool bMobile;
+        private bool bProxy;
+        private bool bHosted;
 
+        private Thread ReceiveThread;
 
         internal Validator(Socket ValidatorSocket)
         {
@@ -47,19 +50,116 @@ namespace ValidatorSocketServer
                         this.Lat = ResponseJson.lat;
                         this.Lon = ResponseJson.lon;
                         this.ISP = ResponseJson.isp;
-                        this.Mobile = ResponseJson.mobile;
-                        this.Proxy = ResponseJson.proxy;
-                        this.Hosted = ResponseJson.hosting;
+                        this.bMobile = ResponseJson.mobile;
+                        this.bProxy = ResponseJson.proxy;
+                        this.bHosted = ResponseJson.hosting;
+                    }
+
+                    if (this.bProxy)
+                    {
+                        throw new Exception("Validator connection rejected: Proxy connections are not allowed.");
                     }
                 }
+            }
 
+            ReceiveThread = new Thread(new ThreadStart(ReceiveData));
+            ReceiveThread.Start();
+        }
 
+        private void ReceiveData()
+        {
+            byte[] buffer = new byte[1024];
+            int bytesRead;
+            while (true)
+            {
+                try
+                {
+                    bytesRead = ValidatorSocket.Receive(buffer);
+                    if (bytesRead > 0)
+                    {
+                        byte[] receivedData = new byte[bytesRead];
+                        Array.Copy(buffer, receivedData, bytesRead);
+
+                        TransactionValidationResponseEnvelope TVRE = System.Text.Json.JsonSerializer.Deserialize<TransactionValidationResponseEnvelope>(receivedData);
+
+                        Controller.ProcessValidatorResponse(TVRE);
+                    }
+                }
+                catch (SocketException ex)
+                {
+                    Console.WriteLine("Socket exception: " + ex.Message);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Exception: " + ex.Message);
+                }
             }
         }
 
         internal int Send(byte[] Message)
         {
             return ValidatorSocket.Send(Message);
+        }
+
+        public Guid ValidatorID
+        {
+            get { return gValidatorID; }
+            set { gValidatorID = value; }
+        }
+        public string IPAddress
+        {
+            get { return sIPAddress; }
+            set { sIPAddress = value; }
+        }
+        public string Country
+        {
+            get { return sCountry; }
+            set { sCountry = value; }
+        }
+        public string RegionName
+        {
+            get { return sRegionName; }
+            set { sRegionName = value; }
+        }
+        public string City
+        {
+            get { return sCity; }
+            set { sCity = value; }
+        }
+        public string PostalCode
+        {
+            get { return sPostalCode; }
+            set { sPostalCode = value; }
+        }
+        public string Lat
+        {
+            get { return sLat; }
+            set { sLat = value; }
+        }
+        public string Lon
+        {
+            get { return sLon; }
+            set { sLon = value; }
+        }
+        public string ISP
+        {
+            get { return sISP; }
+            set { sISP = value; }
+        }
+        public bool Mobile
+        {
+            get { return bMobile; }
+            set { bMobile = value; }
+        }
+        public bool Proxy
+        {
+            get { return bProxy; }
+            set { bProxy = value; }
+        }
+        public bool Hosted
+        {
+            get { return bHosted; }
+            set { bHosted = value; }
         }
     }
 }

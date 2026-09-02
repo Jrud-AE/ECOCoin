@@ -14,4 +14,16 @@
     <ProjectReference Include="..\EcoCoinSharedTypes\EcoCoinSharedTypes.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="GenericDataAccessClassCore">
+      <HintPath>..\Libs\GenericDataAccessClassCore.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appconfig.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

@@ -13,14 +13,15 @@ namespace EcoCoinValidator
         private Socket JobSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
         private Thread JobThread;
 
-        internal void Start()
+        public MessageReceiver()
         {
             ConnectToJobServer();
         }
 
         private void ConnectToJobServer()
         {
-            JobSocket.Connect("https://EcoCoinJobRouter.AutomateEarth.com", 90);
+            JobSocket.Connect("EcoCoinAPITestNet.AutomateEarth.com", 5001);
+            Console.WriteLine("Connected to Job Server at https://EcoCoinAPITest.AutomateEarth.com:5001");
 
             JobThread = new Thread(new ThreadStart(WaitForJobs));
 
@@ -33,11 +34,18 @@ namespace EcoCoinValidator
 
             while (true)
             {
-                JobSocket.Receive(buffer);
+                try
+                {
+                    JobSocket.Receive(buffer);
 
-                TransactionRequestEnvelope TranReqW = System.Text.Json.JsonSerializer.Deserialize<TransactionRequestEnvelope>(buffer);
+                    TransactionRequestEnvelope TRE = System.Text.Json.JsonSerializer.Deserialize<TransactionRequestEnvelope>(buffer);
 
-                bool Result = RequestValidationRouter.ValidateTransaction(TranReqW.Request, TranReqW.TransactionSignature);
+                    bool Result = RequestValidationRouter.ValidateTransaction(TRE.Request, TRE.EnvelopeSignature).Approved;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Error receiving job from Job Server: " + ex.Message);
+                }
             }
         }
 

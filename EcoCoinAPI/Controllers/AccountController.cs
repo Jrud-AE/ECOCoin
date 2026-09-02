@@ -30,24 +30,22 @@ namespace EcoCoinAPI.Controllers
         public PendingTransactionReceiptEnvelope AccountCreate(string AccountName, string InitialPublicKey)
         {
             TransactionRequest TR = new TransactionRequest();
-            TR.AccountID = Guid.NewGuid();
-            TR.TransactionSignerID = Guid.Parse("a6479df0-445a-4376-b3ed-6dd89fc51cf9");
-            TR.AccountName = AccountName;
             TR.RequestType = RequestType.CreateAccount;
+            TR.AccountID = Guid.NewGuid();
+            TR.TransactionSignerID = EcoCoinSharedTypes.GlobalVars.AEAccountCreationAccount;
+            TR.TransactionSignerKeyID = 0;
+            TR.AccountName = AccountName;
             TR.InitialPublicKey = InitialPublicKey;
+            TR.NOnce = 0;
+            TR.TransactionSignature = EcoCoinSharedTypes.GlobalFunctions.GenerateCryptoHashForObjectAsString(TR, TR.TransactionSignerID, TR.TransactionSignerKeyID);
 
-            //TODO: Validate with blockchain that account creation is acceptable, then execute below code on verification
+            //send transaction request to blockchain for approval
+            TransactionRequestEnvelope TRE = new TransactionRequestEnvelope(TR, EcoCoinSharedTypes.GlobalFunctions.GenerateCryptoHashForObject(TR));
 
-            //AccountDetails AD = AccountDetails.CreateAccount(AccountName, InitialPublicKey);
+            GlobalFunctions.SendTransactionRequestToValidators(TRE);
 
-            //AD.SaveAccountToFile();
 
-            //AccountDetailsEnvelope ADE = new AccountDetailsEnvelope();
-            //ADE.AccountDetails = AD;
-            //ADE.Signature = GlobalFunctions.GenerateCryptoHashForObject(AD);
-
-            //return AD;
-
+            //send back a pending transaction receipt to the user so they can check on the status of their request
             PendingTransactionReceipt PTR = new PendingTransactionReceipt();
             PTR.TransactionID = TR.TransactionID;
 
@@ -56,23 +54,25 @@ namespace EcoCoinAPI.Controllers
             return PTRE;
         }
 
+
         [HttpGet("AccountAddKey", Name = "AccountAddKey")]
-        public PendingTransactionReceiptEnvelope AccountAddKey(Guid AccountId, string NewPublicKey, string TransactionSignature)
+        public PendingTransactionReceiptEnvelope AccountAddKey(Guid AccountId, string NewPublicKey, string TransactionSignature, long NOnce, string Signature)
         {
             TransactionRequest TR = new TransactionRequest();
+            TR.RequestType = RequestType.AddKey;
             TR.AccountID = AccountId;
             TR.TransactionSignerID = AccountId;
-            TR.RequestType = RequestType.AddKey;
             TR.NewPublicKey = NewPublicKey;
+            TR.NOnce = NOnce;
+            TR.TransactionSignature = Signature;
 
-            //TODO: Validate with blockchain that key addition is acceptable, then run below code upon validation
+            //send transaction request to blockchain for approval
+            TransactionRequestEnvelope TRE = new TransactionRequestEnvelope(TR, EcoCoinSharedTypes.GlobalFunctions.GenerateCryptoHashForObject(TR));
 
-            //AccountDetails AD = new AccountDetails(AccountId);
+            GlobalFunctions.SendTransactionRequestToValidators(TRE);
 
-            //AD.ApprovedKeys.Add(new KeyPair() { PublicKey = NewPublicKey });
 
-            //AD.SaveAccountToFile();
-
+            //send back a pending transaction receipt to the user so they can check on the status of their request
             PendingTransactionReceipt PTR = new PendingTransactionReceipt(TR.TransactionID);
 
             PendingTransactionReceiptEnvelope PTRE = new PendingTransactionReceiptEnvelope(PTR, EcoCoinSharedTypes.GlobalFunctions.GenerateCryptoHashForObject(PTR));

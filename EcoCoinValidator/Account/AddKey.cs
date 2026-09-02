@@ -10,34 +10,83 @@ namespace EcoCoinValidator.Account
 {
     public class AddKey
     {
-        public static bool Validate(TransactionRequest TranReq, byte[] TransactionSignature)
+        public static TransactionValidationResponse Validate(TransactionRequest TranReq, byte[] TransactionSignature)
         {
-            bool Approval = false;
+            TransactionValidationResponse Approval = new TransactionValidationResponse() { Approved = false };
             
             AccountDetails SignerAccount = new AccountDetails(TranReq.TransactionSignerID);
 
-            KeyPair ValidKeyPair = null;
+            KeyPair ValidKeyPair = SignerAccount.ApprovedKeys[TranReq.TransactionSignerKeyID];
 
-            using (RSA rsa = RSA.Create())
-            {
-                foreach (KeyPair KP in SignerAccount.ApprovedKeys)
-                {
-                    rsa.ImportFromPem(KP.PublicKey);
-
-                    if (rsa.VerifyData(GlobalFunctions.SerializeObjectToByteArray(TranReq), TransactionSignature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1))
-                    {
-                        ValidKeyPair = KP;
-                    }
-                }
-            }
 
             //CHECK 1: Verify that the signing key has permission to create keys
             if (ValidKeyPair.Permissions.KeyCreationPermission)
             {
-                Approval = true;
+                //CHECK 2: Is the key already on the account?
+                if (!IsKeyAlreadyOnAccount(SignerAccount, TranReq.NewPublicKey))
+                {
+                    //CHECK 3: Is the key malformed somehow?
+                    if (IsKeyValid(TranReq.NewPublicKey))
+                    {
+                        Approval.Approved = true;
+                    }
+                    else
+                    {
+                        Approval.DenyReason = "The key is malformed or invalid.";
+                    }
+                }
+                else
+                {
+                    Approval.DenyReason = "The key is already on the account.";
+                }
+            }
+            else
+            {
+                Approval.DenyReason = "The signing key does not have permission to create keys.";
             }
 
             return Approval;
+        }
+
+        public static bool IsKeyAlreadyOnAccount(AccountDetails SignerAccount, string PublicKey)
+        {
+            bool KeyAlreadyExists = false;
+            foreach (KeyPair KP in SignerAccount.ApprovedKeys)
+            {
+                if (KP.PublicKey == PublicKey)
+                {
+                    KeyAlreadyExists = true;
+                    break;
+                }
+            }
+            return KeyAlreadyExists;
+        }
+        public static bool IsKeyValid(string pemKey)
+        {
+            bool Valid = false;
+
+            if (!string.IsNullOrWhiteSpace(pemKey))
+            {
+
+                try
+                {
+                    // Create an ephemeral RSA instance
+                    using var rsa = RSA.Create();
+
+                    // This parses both standard SubjectPublicKeyInfo and PKCS#1 RSA public keys
+                    rsa.ImportFromPem(pemKey.AsSpan());
+
+                    // If it imports without throwing, the key structure is valid
+                    Valid = true;
+                }
+                catch (Exception)
+                {
+                    // The key is corrupted, malformed, or mathematically invalid
+                    return false;
+                }
+            }
+
+            return Valid;
         }
     }
 }

@@ -1,4 +1,6 @@
-﻿using System.Net;
+﻿using System.Diagnostics.Tracing;
+using System.Net;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 
 namespace EcoCoinSharedTypes
@@ -14,6 +16,8 @@ namespace EcoCoinSharedTypes
 
         private decimal dPrimaryBalance = 0;
         private List<BalanceHold> lBalanceHolds = new List<BalanceHold>();
+
+        private List<VerifiedMember> lVerifiedMembers = new List<VerifiedMember>();
 
         public AccountDetails()
         {
@@ -32,7 +36,7 @@ namespace EcoCoinSharedTypes
 
             //if we have a local copy of the file, then use it
             string FilePath = GlobalVars.AccountStoragePath + gAccountID.ToString() + ".acc";
-            if (System.IO.File.Exists(FilePath) && (MostRecentVersionHash == GlobalFunctions.HashFileAsString(FilePath) || true))
+            if (System.IO.File.Exists(FilePath) && (MostRecentVersionHash == GlobalFunctions.HashFileAsString(FilePath) || MostRecentVersionHash == ""))
             {
                 using (System.IO.FileStream FS = new FileStream(GlobalVars.AccountStoragePath + gAccountID.ToString() + ".acc", FileMode.Open))
                 { 
@@ -45,17 +49,7 @@ namespace EcoCoinSharedTypes
             }
             else //if we don't have a copy of the file locally or it's out of date, then request it from the Automate Earth server
             {
-                WebRequest WR = WebRequest.Create("https://ecocoinapi.automateearth.com/api/Account/AccountRetrieve?AccountId=" + gAccountID.ToString());
-                
-                using (WebResponse Response = WR.GetResponse())
-                {
-                    using (StreamReader SR = new StreamReader(Response.GetResponseStream()))
-                    {
-                        string JSON = SR.ReadToEnd();
-                        AccountFile = System.Text.Json.JsonSerializer.Deserialize<AccountDetails>(JSON);
-                    }
-                }
-                
+                AccountFile = DownloadAccountFile(gAccountID);
             }
 
             this.sAccountName = AccountFile.sAccountName;
@@ -66,6 +60,26 @@ namespace EcoCoinSharedTypes
 
             this.dPrimaryBalance = AccountFile.dPrimaryBalance;
             this.lBalanceHolds = AccountFile.lBalanceHolds;
+        }
+
+        public static AccountDetails DownloadAccountFile(Guid gAccountID)
+        {
+            AccountDetails AccountFile;
+
+            WebRequest WR = WebRequest.Create("https://ecocoinapi.automateearth.com/api/Account/AccountRetrieve?AccountId=" + gAccountID.ToString());
+
+            using (WebResponse Response = WR.GetResponse())
+            {
+                using (StreamReader SR = new StreamReader(Response.GetResponseStream()))
+                {
+                    string JSON = SR.ReadToEnd();
+                    AccountFile = System.Text.Json.JsonSerializer.Deserialize<AccountDetails>(JSON);
+
+                    AccountFile.SaveAccountToFile();
+                }
+            }
+
+            return AccountFile;
         }
 
         public void SaveAccountToFile()
@@ -140,6 +154,32 @@ namespace EcoCoinSharedTypes
             set { lBalanceHolds = value; }
         }
 
+        public long LastUsedNOnce
+        {
+            get
+            {
+                string[] Lines = System.IO.File.ReadAllLines(EcoCoinSharedTypes.GlobalVars.AccountStoragePath + gAccountID.ToString() + ".lat");
+
+                int i = Lines.Length - 1;
+                long NOnce = -1;
+
+                while (!Lines[i].Contains("{"))
+                {
+                    if (Lines[i].Contains("NOnce="))
+                    {
+                        NOnce = long.Parse(Lines[i].Replace("NOnce=", "").Replace(",", ""));
+                    }
+                    i--;
+                }
+
+                return NOnce;
+            }
+        }
+        public List<VerifiedMember> VerifiedMembers
+        {
+            get { return lVerifiedMembers; }
+            set { lVerifiedMembers = value; }
+        }
     }
 
     public class AccountDetailsEnvelope

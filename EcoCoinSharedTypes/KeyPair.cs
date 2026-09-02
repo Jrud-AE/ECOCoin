@@ -7,6 +7,7 @@ namespace EcoCoinSharedTypes
     {
         private string sPrivateKey;
         private string sPublicKey;
+        private bool bDisabled;
 
         private KeyPairPermissions kppPermissions;
 
@@ -38,6 +39,7 @@ namespace EcoCoinSharedTypes
 
             Key.sPrivateKey = TKey.ExportPkcs8PrivateKeyPem();
             Key.sPublicKey = TKey.ExportSubjectPublicKeyInfoPem();
+            Key.bDisabled = false;
             
             return Key;
         }
@@ -47,23 +49,26 @@ namespace EcoCoinSharedTypes
             get { return sPrivateKey; }
             set { sPrivateKey = value; }
         }
-
         public string PublicKey
         { 
             get { return sPublicKey; } 
             set { sPublicKey = value; }
         }
-
-
+        public bool Disabled
+        {
+            get { return bDisabled; }
+            set { bDisabled = value; }
+        }
     }
 
     public class KeyPairPermissions
     {
-        #region Permissions
         private bool bAlterAccountSettingsPermission;
         private bool bKeyCreationPermission;
         private bool bKeyDeletePermission;
         private bool bKeyPermissionModifyPermission;
+
+        private bool bValidatingEnabled;
 
         public KeyPairPermissions()
         {
@@ -97,6 +102,13 @@ namespace EcoCoinSharedTypes
             get { return bKeyPermissionModifyPermission; }
             set { bKeyPermissionModifyPermission = value; }
         }
-        #endregion
+        public bool ValidatingEnabled
+        {
+            get { return bValidatingEnabled; }
+            set
+            {
+                bValidatingEnabled = value;
+            }
+        }
     }
 }
