@@ -5,11 +5,11 @@ using System.Data;
 
 namespace EcoCoinAPI.Controllers
 {
-    [ApiController]
     [Route("api/[controller]")]
+    [ApiController]
     public class TransactionBroadcastController : ControllerBase
     {
-        [HttpGet(Name = "BalanceTransferRequest")]
+        [HttpGet("BalanceTransferRequest", Name = "BalanceTransferRequest")]
         public BalanceTransferStub BalanceTransferRequest()
         {
             BalanceTransferStub BTS = new BalanceTransferStub();
@@ -20,24 +20,16 @@ namespace EcoCoinAPI.Controllers
             return BTS;
         }
 
-        [HttpGet(Name = "CheckTrasactionStatus")]
-        public TransactionRequestStatus CheckTrasactionStatus(Guid TransactionRequestID)
+        [HttpGet("CheckTransactionStatus", Name = "CheckTransactionStatus")]
+        public TransactionRequestStatus CheckTransactionStatus(Guid TransactionRequestID)
         {
             SQLParameterCollection Params = new SQLParameterCollection();
 
             Params.AddParameter("TransactionRequestID", TransactionRequestID);
 
-            DataRow DR = GlobalVars.DB.DBSelect("SELECT TransactionStartDate, NewAccountID, ApproveValidatorCount, DenyValidatorCount Approved, TransactionEndDate FROM TransactionRequests WHERE TransactionID = @TransactionRequestID", Params).Tables[0].Rows[0];
+            DataRow DR = GlobalVars.DB.DBSelect("SELECT TransactionRequestID, TransactionStartDate, NewAccountID, ApproveValidatorCount, DenyValidatorCount, Status, TransactionEndDate, TransactionRequestType FROM TransactionRequests WHERE TransactionRequestID = @TransactionRequestID", Params).Tables[0].Rows[0];
 
-            TransactionRequestStatus TRS = new TransactionRequestStatus();
-
-            TRS.TransactionStartDate = (DateTime)DR["TransactionStartDate"];
-            TRS.NewAccountID = (Guid)DR["NewAccountID"];
-            TRS.TransactionEndDate = (DateTime)DR["TransactionEndDate"];
-            TRS.TransactionRequestID = TransactionRequestID;
-            TRS.Approved = (bool)DR["Approved"];
-            TRS.ApproveValidatorCount = (int)DR["ApproveValidatorCount"];
-            TRS.DenyValidatorCount = (int)DR["DenyValidatorCount"];
+            TransactionRequestStatus TRS = new TransactionRequestStatus(DR);
 
             return TRS;
         }

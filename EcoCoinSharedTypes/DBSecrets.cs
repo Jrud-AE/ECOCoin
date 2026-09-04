@@ -68,19 +68,14 @@ namespace EcoCoinSharedTypes
 
         public void LoadSecrets()
         {
-            using (System.IO.FileStream FS = new FileStream(GlobalVars.ECORootStoragePath + "DBSecrets.config", FileMode.Open))
-            {
-                byte[] Data = new byte[FS.Length];
+            string JSON = File.ReadAllText(GlobalVars.ECORootStoragePath + "DBSecrets.config");
 
-                FS.Read(Data, 0, Data.Length);
+            DBSecrets DBS = System.Text.Json.JsonSerializer.Deserialize<DBSecrets>(JSON);
 
-                DBSecrets DBS = System.Text.Json.JsonSerializer.Deserialize<DBSecrets>(Data);
-
-                this.Username = DBS.Username;
-                this.Password = DBS.Password;
-                this.ServerAddress = DBS.ServerAddress;
-                this.Database = DBS.Database;
-            }
+            this.Username = DBS.Username;
+            this.Password = DBS.Password;
+            this.ServerAddress = DBS.ServerAddress;
+            this.Database = DBS.Database;
         }
     }
 }

@@ -62,6 +62,13 @@ namespace ValidatorSocketServer
         {
             ActiveTransactionRequests.Add(TRE);
 
+            SQLParameterCollection Params = new SQLParameterCollection();
+
+            Params.AddParameter("TransactionID", TRE.Request.TransactionID);
+            Params.AddParameter("Status", TransactionStatus.Validating);
+
+            GlobalVars.DB.DBUpdate("UPDATE TransactionRequests SET Status = @Status WHERE TransactionID = @TransactionID", Params);
+
             //if there are less than 150 validators, send to all validators
             if (ValidatorConnections.Count <= 150)
             {
@@ -78,8 +85,6 @@ namespace ValidatorSocketServer
 
                 //if there are more than 150 validators, use diversity algorithm
                 List<Validator> ValidatorsToSendTo = new List<Validator>();
-
-                
 
                 //get first random validator
                 Random rand = new Random();
@@ -194,6 +199,16 @@ namespace ValidatorSocketServer
                         TRE.Request.TransactionLatticeEntry.DisapprovingValidators.Add(TVRE.ValidatorID);
                     }
 
+
+                    SQLParameterCollection Params = new SQLParameterCollection(); 
+
+                    Params.AddParameter("TransactionID", TRE.Request.TransactionID);
+                    Params.AddParameter("ApprovingValidators", TRE.Request.TransactionLatticeEntry.ApprovingValidators.Count);
+                    Params.AddParameter("DisapprovingValidators", TRE.Request.TransactionLatticeEntry.DisapprovingValidators.Count);
+                    Params.AddParameter("Status", TransactionStatus.Validating);
+
+                    GlobalVars.DB.DBUpdate("UPDATE TransactionRequests SET ApprovingValidators = @ApprovingValidators, DisapprovingValidators = @DisapprovingValidators, Status = @Status WHERE TransactionID = @TransactionID", Params);
+
                     if (TRE.Request.TransactionLatticeEntry.ApprovingValidators.Count + TRE.Request.TransactionLatticeEntry.DisapprovingValidators.Count == TRE.Request.IssuedValidatorCount || TRE.Request.TransactionLatticeEntry.ApprovingValidators.Count + TRE.Request.TransactionLatticeEntry.DisapprovingValidators.Count > 99)
                     {
                         CompleteTransactionRequest(TRE);
@@ -249,68 +264,85 @@ namespace ValidatorSocketServer
                 //increase reputation for approvers
                 foreach (Guid Approver in TRE.Request.TransactionLatticeEntry.ApprovingValidators)
                 {
-                    SQLParameterCollection Params = new SQLParameterCollection();
-                    Params.AddParameter("ValidatorID", Approver);
+                    SQLParameterCollection Params2 = new SQLParameterCollection();
+                    Params2.AddParameter("ValidatorID", Approver);
 
-                    if (ValidatorSocketServer.GlobalVars.DB.DBSelect("SELECT COUNT(*) FROM ValidatorReputation WHERE ValidatorID = @ValidatorID", Params).Tables[0].Rows[0][0].ToString() == "0")
+                    if (ValidatorSocketServer.GlobalVars.DB.DBSelect("SELECT COUNT(*) FROM ValidatorReputation WHERE ValidatorID = @ValidatorID", Params2).Tables[0].Rows[0][0].ToString() == "0")
                     {
-                        ValidatorSocketServer.GlobalVars.DB.DBInsert("INSERT INTO ValidatorReputation (ValidatorID, SuccessfulValidations, IncorrectValidations, TotalReputation) VALUES (@ValidatorID, 1, 0, 1.1)", Params);
+                        ValidatorSocketServer.GlobalVars.DB.DBInsert("INSERT INTO ValidatorReputation (ValidatorID, SuccessfulValidations, IncorrectValidations, TotalReputation) VALUES (@ValidatorID, 1, 0, 1.1)", Params2);
                     }
                     else
                     {
-                        ValidatorSocketServer.GlobalVars.DB.DBUpdate("UPDATE ValidatorReputation SET SuccessfulValidations = SuccessfulValidations + 1, TotalReputation = TotalReputation + 0.1 WHERE ValidatorID = @ValidatorID", Params);
+                        ValidatorSocketServer.GlobalVars.DB.DBUpdate("UPDATE ValidatorReputation SET SuccessfulValidations = SuccessfulValidations + 1, TotalReputation = TotalReputation + 0.1 WHERE ValidatorID = @ValidatorID", Params2);
                     }
                 }
 
                 //decrease reputation for deniers
                 foreach (Guid Denier in TRE.Request.TransactionLatticeEntry.DisapprovingValidators)
                 {
-                    SQLParameterCollection Params = new SQLParameterCollection();
-                    Params.AddParameter("ValidatorID", Denier);
+                    SQLParameterCollection Params2 = new SQLParameterCollection();
+                    Params2.AddParameter("ValidatorID", Denier);
 
-                    if (ValidatorSocketServer.GlobalVars.DB.DBSelect("SELECT COUNT(*) FROM ValidatorReputation WHERE ValidatorID = @ValidatorID", Params).Tables[0].Rows[0][0].ToString() == "0")
+                    if (ValidatorSocketServer.GlobalVars.DB.DBSelect("SELECT COUNT(*) FROM ValidatorReputation WHERE ValidatorID = @ValidatorID", Params2).Tables[0].Rows[0][0].ToString() == "0")
                     {
-                        ValidatorSocketServer.GlobalVars.DB.DBInsert("INSERT INTO ValidatorReputation (ValidatorID, SuccessfulValidations, IncorrectValidations, TotalReputation) VALUES (@ValidatorID, 0, 1, -1)", Params);
+                        ValidatorSocketServer.GlobalVars.DB.DBInsert("INSERT INTO ValidatorReputation (ValidatorID, SuccessfulValidations, IncorrectValidations, TotalReputation) VALUES (@ValidatorID, 0, 1, -1)", Params2);
                     }
                     else
                     {
-                        ValidatorSocketServer.GlobalVars.DB.DBUpdate("UPDATE ValidatorReputation SET IncorrectValidations = IncorrectValidations + 1, TotalReputation = TotalReputation - 1.0 WHERE ValidatorID = @ValidatorID", Params);
+                        ValidatorSocketServer.GlobalVars.DB.DBUpdate("UPDATE ValidatorReputation SET IncorrectValidations = IncorrectValidations + 1, TotalReputation = TotalReputation - 1.0 WHERE ValidatorID = @ValidatorID", Params2);
                     }
                 }
+
+                SQLParameterCollection Params = new SQLParameterCollection();
+
+                Params.AddParameter("TransactionID", TRE.Request.TransactionID);
+                Params.AddParameter("Status", TransactionStatus.Approved);
+                Params.AddParameter("TransactionEndDate", DateTime.UtcNow);
+
+                GlobalVars.DB.DBUpdate("UPDATE TransactionRequests SET Status = @Status, TransactionEndDate = @TransactionEndDate WHERE TransactionID = @TransactionID", Params);
             }
             else //ties also disapprove automatically.
             {
                 //increase reputation for deniers
                 foreach (Guid Denier in TRE.Request.TransactionLatticeEntry.DisapprovingValidators)
                 {
-                    SQLParameterCollection Params = new SQLParameterCollection();
-                    Params.AddParameter("ValidatorID", Denier);
+                    SQLParameterCollection Params2 = new SQLParameterCollection();
+                    Params2.AddParameter("ValidatorID", Denier);
 
-                    if (ValidatorSocketServer.GlobalVars.DB.DBSelect("SELECT COUNT(*) FROM ValidatorReputation WHERE ValidatorID = @ValidatorID", Params).Tables[0].Rows[0][0].ToString() == "0")
+                    if (ValidatorSocketServer.GlobalVars.DB.DBSelect("SELECT COUNT(*) FROM ValidatorReputation WHERE ValidatorID = @ValidatorID", Params2).Tables[0].Rows[0][0].ToString() == "0")
                     {
-                        ValidatorSocketServer.GlobalVars.DB.DBInsert("INSERT INTO ValidatorReputation (ValidatorID, SuccessfulValidations, IncorrectValidations, TotalReputation) VALUES (@ValidatorID, 1, 0, 1.1)", Params);
+                        ValidatorSocketServer.GlobalVars.DB.DBInsert("INSERT INTO ValidatorReputation (ValidatorID, SuccessfulValidations, IncorrectValidations, TotalReputation) VALUES (@ValidatorID, 1, 0, 1.1)", Params2);
                     }
                     else
                     {
-                        ValidatorSocketServer.GlobalVars.DB.DBUpdate("UPDATE ValidatorReputation SET SuccessfulValidations = SuccessfulValidations + 1, TotalReputation = TotalReputation + 0.1 WHERE ValidatorID = @ValidatorID", Params);
+                        ValidatorSocketServer.GlobalVars.DB.DBUpdate("UPDATE ValidatorReputation SET SuccessfulValidations = SuccessfulValidations + 1, TotalReputation = TotalReputation + 0.1 WHERE ValidatorID = @ValidatorID", Params2);
                     }
                 }
 
                 //decrease reputation for approvers
                 foreach (Guid Approver in TRE.Request.TransactionLatticeEntry.ApprovingValidators)
                 {
-                    SQLParameterCollection Params = new SQLParameterCollection();
-                    Params.AddParameter("ValidatorID", Approver);
+                    SQLParameterCollection Params2 = new SQLParameterCollection();
+                    Params2.AddParameter("ValidatorID", Approver);
 
-                    if (ValidatorSocketServer.GlobalVars.DB.DBSelect("SELECT COUNT(*) FROM ValidatorReputation WHERE ValidatorID = @ValidatorID", Params).Tables[0].Rows[0][0].ToString() == "0")
+                    if (ValidatorSocketServer.GlobalVars.DB.DBSelect("SELECT COUNT(*) FROM ValidatorReputation WHERE ValidatorID = @ValidatorID", Params2).Tables[0].Rows[0][0].ToString() == "0")
                     {
-                        ValidatorSocketServer.GlobalVars.DB.DBInsert("INSERT INTO ValidatorReputation (ValidatorID, SuccessfulValidations, IncorrectValidations, TotalReputation) VALUES (@ValidatorID, 0, 1, -1)", Params);
+                        ValidatorSocketServer.GlobalVars.DB.DBInsert("INSERT INTO ValidatorReputation (ValidatorID, SuccessfulValidations, IncorrectValidations, TotalReputation) VALUES (@ValidatorID, 0, 1, -1)", Params2);
                     }
                     else
                     {
-                        ValidatorSocketServer.GlobalVars.DB.DBUpdate("UPDATE ValidatorReputation SET IncorrectValidations = IncorrectValidations + 1, TotalReputation = TotalReputation - 1.0 WHERE ValidatorID = @ValidatorID", Params);
+                        ValidatorSocketServer.GlobalVars.DB.DBUpdate("UPDATE ValidatorReputation SET IncorrectValidations = IncorrectValidations + 1, TotalReputation = TotalReputation - 1.0 WHERE ValidatorID = @ValidatorID", Params2);
                     }
                 }
+
+
+                SQLParameterCollection Params = new SQLParameterCollection();
+
+                Params.AddParameter("TransactionID", TRE.Request.TransactionID);
+                Params.AddParameter("Status", TransactionStatus.Denied);
+                Params.AddParameter("TransactionEndDate", DateTime.UtcNow);
+
+                GlobalVars.DB.DBUpdate("UPDATE TransactionRequests SET Status = @Status, TransactionEndDate = @TransactionEndDate WHERE TransactionID = @TransactionID", Params);
             }
         }
 
