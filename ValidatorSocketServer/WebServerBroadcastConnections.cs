@@ -25,6 +25,7 @@ namespace ValidatorSocketServer
                 }
                 catch (Exception ex)
                 {
+                    Console.ForegroundColor = ConsoleColor.Red;
                     Console.WriteLine("Error creating TCP listener: " + ex.Message);
                 }
             }
@@ -35,18 +36,22 @@ namespace ValidatorSocketServer
 
         internal void WaitForWebServerConnections()
         {
+            Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("Waiting for web server connections on port 5000...");
             while (true)
             {
                 try
                 {
                     Socket WebServerSocket = Listener.AcceptSocket();
+                    WebServerSocket.DontFragment = true;
                     WebServer WS = new WebServer(WebServerSocket);
                     Controller.ServerConnections.Add(WS);
+                    Console.ForegroundColor = ConsoleColor.Green;
                     Console.WriteLine("New Web Server connection: " + WebServerSocket.AddressFamily.ToString());
                 }
                 catch (Exception ex)
                 {
+                    Console.ForegroundColor = ConsoleColor.Red;
                     Console.WriteLine("Error accepting Web server connections: " + ex.Message);
                 }
             }

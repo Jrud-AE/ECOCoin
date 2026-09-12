@@ -9,6 +9,7 @@ builder.Services.AddWindowsService(Options =>
 
 // See https://aka.ms/new-console-template for more information
 
+Console.ForegroundColor = ConsoleColor.Green;
 Console.WriteLine("Eco Coin Validation Running.  Press any key to end.");
 EcoCoinValidator.Controller C = new EcoCoinValidator.Controller();
 Console.ReadKey();

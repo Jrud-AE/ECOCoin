@@ -24,6 +24,7 @@ namespace ValidatorSocketServer
                 }
                 catch (Exception ex)
                 {
+                    Console.ForegroundColor = ConsoleColor.Red;
                     Console.WriteLine("Error creating TCP listener: " + ex.Message);
                 }
             }
@@ -32,6 +33,7 @@ namespace ValidatorSocketServer
         }
         internal void WaitForValidatorConnections()
         {
+            Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("Waiting for validator connections on port 5001...");
             while (true)
             {
@@ -40,10 +42,12 @@ namespace ValidatorSocketServer
                     Socket ValidatorSocket = Listener.AcceptSocket();
                     Validator V = new Validator(ValidatorSocket);
                     Controller.ValidatorConnections.Add(V);
+                    Console.ForegroundColor = ConsoleColor.Green;
                     Console.WriteLine("Validator Connected: " + V.IPAddress.ToString());
                 }
                 catch (Exception ex)
                 {
+                    Console.ForegroundColor = ConsoleColor.Red;
                     Console.WriteLine("Error accepting validator connection: " + ex.Message);
                 }
             }

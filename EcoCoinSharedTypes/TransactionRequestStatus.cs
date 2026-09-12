@@ -74,14 +74,14 @@ namespace EcoCoinSharedTypes
             Params.AddParameter("TransactionStartDate", TransactionStartDate);
             Params.AddParameter("NewAccountID", NewAccountID);
             Params.AddParameter("TransactionEndDate", TransactionEndDate);
-            Params.AddParameter("Status", Status);
+            Params.AddParameter("Status", Status.ToString());
             Params.AddParameter("ApproveValidatorCount", ApproveValidatorCount);
             Params.AddParameter("DenyValidatorCount", DenyValidatorCount);
-            Params.AddParameter("TransactionRequestType", TransactionRequestType);
+            Params.AddParameter("TransactionRequestType", TransactionRequestType.ToString());
 
             if (GlobalVars.DB.DBSelect("SELECT COUNT(*) FROM TransactionRequests WHERE TransactionRequestID = @TransactionRequestID", Params).Tables[0].Rows[0][0].ToString() == "0")
             {
-                GlobalVars.DB.DBInsert("INSERT INTO TransactionRequests (TransactionRequestID, TransactionStartDate, TransactionEndDate, NewAccountID, Status, ApproveValidatorCount, DenyValidatorCount, TransactionRequestType) VALUES (@TransactionID, @TransactionStartDate, @TransactionEndDate, @NewAccountID, @Status, @ApproveValidatorCount, @DenyValidatorCount, @TransactionRequestType)", Params);
+                GlobalVars.DB.DBInsert("INSERT INTO TransactionRequests (TransactionRequestID, TransactionStartDate, TransactionEndDate, NewAccountID, Status, ApproveValidatorCount, DenyValidatorCount, TransactionRequestType) VALUES (@TransactionRequestID, @TransactionStartDate, @TransactionEndDate, @NewAccountID, @Status, @ApproveValidatorCount, @DenyValidatorCount, @TransactionRequestType)", Params);
             }
             else
             {

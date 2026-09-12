@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace EcoCoinSharedTypes
 {
-    public class GlobalFunctions
+    public static class GlobalFunctions
     {
         public static byte[] SerializeObjectToByteArray(object obj)
         {
@@ -51,6 +52,14 @@ namespace EcoCoinSharedTypes
         public static string GenerateCryptoHashForObjectAsString(object obj, Guid SigningAccount = default, int AccountKeyID = -1)
         {
             return Convert.ToHexString(GenerateCryptoHashForObject(obj, SigningAccount, AccountKeyID));
+        }
+
+        public static T DeepCopy<T>(this T self)
+        {
+            if (self == null) return default;
+
+            string json = JsonSerializer.Serialize(self);
+            return JsonSerializer.Deserialize<T>(json);
         }
     }
 }

@@ -15,11 +15,30 @@
 
             <Label x:Name="lblAccountNumber" Text="Account: " Style="{StaticResource SubHeadline}"/>
 
-            <Button
-                x:Name="CounterBtn"
-                Text="Click me" 
-                Clicked="OnCounterClicked"
-                HorizontalOptions="Fill" />
+            <Grid WidthRequest="500" HeightRequest="80">
+                <Label Text="Total Balance" HorizontalOptions="Start" FontSize="Medium"></Label>
+                <Label Text="0 ECO" HorizontalOptions="Start" Margin="0,25" FontSize="Small" x:Name="lblTotalBalance"></Label>
+            </Grid>
+            <Grid WidthRequest="500">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"></RowDefinition>
+                    <RowDefinition Height="Auto"></RowDefinition>
+                </Grid.RowDefinitions>
+
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1*"></ColumnDefinition>
+                    <ColumnDefinition Width="1*"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+
+                <Label Text="Available" Grid.Row="0" Grid.Column="0"></Label>
+                <Label Text="Held" Grid.Row="0" Grid.Column="1"></Label>
+                <Label x:Name="lblAvailable" Text="0 ECO" Grid.Row="1" Grid.Column="0"></Label>
+                <Label x:Name="lblHeld" Text="0 ECO" Grid.Row="1" Grid.Column="1" TextDecorations="Underline" TextColor="MediumPurple">
+                    <Label.GestureRecognizers>
+                        <PointerGestureRecognizer PointerEntered="PointerGestureRecognizer_PointerEntered"  PointerExited="PointerGestureRecognizer_PointerExited"></PointerGestureRecognizer>
+                    </Label.GestureRecognizers>
+                </Label>
+            </Grid>
         </VerticalStackLayout>
     </ScrollView>
 

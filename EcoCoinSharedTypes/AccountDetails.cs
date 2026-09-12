@@ -60,20 +60,24 @@ namespace EcoCoinSharedTypes
 
             this.dPrimaryBalance = AccountFile.dPrimaryBalance;
             this.lBalanceHolds = AccountFile.lBalanceHolds;
+
+            this.lVerifiedMembers = AccountFile.lVerifiedMembers;
         }
 
         public static AccountDetails DownloadAccountFile(Guid gAccountID)
         {
             AccountDetails AccountFile;
 
-            WebRequest WR = WebRequest.Create("https://ecocoinapi.automateearth.com/api/Account/AccountRetrieve?AccountId=" + gAccountID.ToString());
+            WebRequest WR = WebRequest.Create(GlobalVars.ServerURLBase + "/api/Account/AccountRetrieve?AccountId=" + gAccountID.ToString());
 
             using (WebResponse Response = WR.GetResponse())
             {
                 using (StreamReader SR = new StreamReader(Response.GetResponseStream()))
                 {
                     string JSON = SR.ReadToEnd();
-                    AccountFile = System.Text.Json.JsonSerializer.Deserialize<AccountDetails>(JSON);
+                    AccountDetailsEnvelope ADE = System.Text.Json.JsonSerializer.Deserialize<AccountDetailsEnvelope>(JSON);
+
+                    AccountFile = ADE.AccountDetails;
 
                     AccountFile.SaveAccountToFile();
                 }
@@ -84,11 +88,12 @@ namespace EcoCoinSharedTypes
 
         public void SaveAccountToFile()
         {
-            System.IO.FileStream FS = new FileStream(GlobalVars.AccountStoragePath + gAccountID.ToString() + ".acc", FileMode.Create);
+            using (System.IO.FileStream FS = new FileStream(GlobalVars.AccountStoragePath + gAccountID.ToString() + ".acc", FileMode.Create))
+            {
+                byte[] buffer = GlobalFunctions.SerializeObjectToByteArray(this);
 
-            byte[] buffer = GlobalFunctions.SerializeObjectToByteArray(this);
-
-            FS.Write(buffer, 0, buffer.Length);
+                FS.Write(buffer, 0, buffer.Length);
+            }
         }
 
         public static AccountDetails CreateAccount(string AccountName, string InitialPublicKey)
@@ -158,18 +163,24 @@ namespace EcoCoinSharedTypes
         {
             get
             {
-                string[] Lines = System.IO.File.ReadAllLines(EcoCoinSharedTypes.GlobalVars.AccountStoragePath + gAccountID.ToString() + ".lat");
+                string FileName = EcoCoinSharedTypes.GlobalVars.AccountStoragePath + gAccountID.ToString() + ".lat";
 
-                int i = Lines.Length - 1;
                 long NOnce = -1;
 
-                while (!Lines[i].Contains("{"))
+                if (System.IO.File.Exists(FileName))
                 {
-                    if (Lines[i].Contains("NOnce="))
+                    string[] Lines = System.IO.File.ReadAllLines(FileName);
+
+                    int i = Lines.Length - 1;
+
+                    while (!Lines[i].Contains("{"))
                     {
-                        NOnce = long.Parse(Lines[i].Replace("NOnce=", "").Replace(",", ""));
+                        if (Lines[i].Contains("NOnce="))
+                        {
+                            NOnce = long.Parse(Lines[i].Replace("NOnce=", "").Replace(",", ""));
+                        }
+                        i--;
                     }
-                    i--;
                 }
 
                 return NOnce;

@@ -1,5 +1,8 @@
 ﻿using EcoCoinSharedTypes;
+using Newtonsoft.Json;
 using System.Net.Sockets;
+using System.Text;
+using System.Text.Json.Serialization;
 
 namespace EcoCoinAPI
 {
@@ -19,12 +22,45 @@ namespace EcoCoinAPI
 
             TRS.SaveToDB();
 
-            if (SocketServer == null || !SocketServer.Connected)
+            bool SendSuccess = false;
+            int Attempts = 0;
+            while (!SendSuccess)
             {
-                ConnectToValidatorServer();
-            }
+                try
+                {
+                    if (SocketServer == null || !SocketServer.Connected)
+                    {
+                        ConnectToValidatorServer();
+                    }
 
-            SocketServer.Send(EcoCoinSharedTypes.GlobalFunctions.SerializeObjectToByteArray(TRE));
+                    byte[] data = EcoCoinSharedTypes.GlobalFunctions.SerializeObjectToByteArray(TRE);
+
+                    if (data.ToList().Contains(0x01))
+                    {
+                        throw new Exception("Error, transaction request contains a smiley face!");
+                    }
+
+                    SocketServer.Send(data);
+
+                    SocketServer.Send(Encoding.UTF8.GetBytes("☺"));
+
+                    SendSuccess = true;
+
+                }
+                catch (Exception ex)
+                {
+                    if (ex.Message.Contains("An existing connection was forcibly closed by the remote host."))
+                    {
+                        ConnectToValidatorServer();
+                    }
+
+                    Attempts++;
+                    if (Attempts == 3)
+                    {
+                        throw;
+                    }
+                }
+            }
         }
 
         private static void ConnectToValidatorServer()

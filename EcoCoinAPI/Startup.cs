@@ -33,6 +33,8 @@ namespace EcoCoinAPI
                 EcoCoinSharedTypes.GlobalVars.AEOfficialServerAccount = Guid.Parse("086e33a8-d884-4b6f-ac37-5afd81091807");
                 EcoCoinSharedTypes.GlobalVars.AEAccountCreationAccount = Guid.Parse("a6479df0-445a-4376-b3ed-6dd89fc51cf9");
                 EcoCoinSharedTypes.GlobalVars.LocalSigningKeyID = 0;
+
+                EcoCoinSharedTypes.GlobalVars.ServerURLBase = "https://ecocoinapi.automateearth.com";
             }
             else
             {
@@ -53,6 +55,7 @@ namespace EcoCoinAPI
                     EcoCoinSharedTypes.GlobalVars.LocalSigningKeyID = 0;
                 }
 
+                EcoCoinSharedTypes.GlobalVars.ServerURLBase = "https://ecocoinapitestnet.automateearth.com";
             }
 
         }

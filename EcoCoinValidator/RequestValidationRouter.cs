@@ -13,7 +13,13 @@ namespace EcoCoinValidator
     {
         internal static TransactionValidationResponse ValidateTransaction(TransactionRequest TranReq, byte[] EnvelopeSignature)
         {
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.WriteLine(DateTime.Now.ToString() + " - Received transaction to validate.  ID: " + TranReq.TransactionID);
+            Console.WriteLine("    Type: " + TranReq.RequestType.ToString());
+            Console.WriteLine("");
+
             TransactionValidationResponse Approval = new TransactionValidationResponse() { Approved = false };
+            Approval.TransactionID = TranReq.TransactionID;
 
             if (ValidateEnvelopeSignature(TranReq, EnvelopeSignature))
             {
@@ -27,7 +33,7 @@ namespace EcoCoinValidator
                     Approval.DenyReason = "Failed to retrieve relevant files for the transaction request.";
                 }
 
-                if (Approval.DenyReason == "")
+                if (Approval.DenyReason == "" || Approval.DenyReason == null)
                 {
                     if (GetMostRecentSignerFile(TranReq))
                     {
@@ -78,6 +84,8 @@ namespace EcoCoinValidator
                 Approval.DenyReason = "The transaction request envelope was not signed by the Automate Earth server, or the request data sent does not match the signature.";
             }
 
+            Approval.TransactionID = TranReq.TransactionID;
+
             return Approval;
         }
 
@@ -91,7 +99,7 @@ namespace EcoCoinValidator
         {
             bool Approval = false;
 
-            //AE Server account signs all transaction requests
+            //AE Server account signs all transaction request envelopes
             AccountDetails SignerAccount = new AccountDetails(GlobalVars.AEOfficialServerAccount);
 
             KeyPair ValidKeyPair = null;
@@ -125,11 +133,12 @@ namespace EcoCoinValidator
             {
                 rsa.ImportFromPem(ValidKeyPair.PublicKey);
                 string TransactionSignature = TranReq.TransactionSignature;
-                TranReq.TransactionSignature = "";
+                TranReq.TransactionSignature = null;
                 if (rsa.VerifyData(GlobalFunctions.SerializeObjectToByteArray(TranReq), Convert.FromHexString(TransactionSignature), HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1))
                 {
                     Approval = true;
                 }
+                TranReq.TransactionSignature = TransactionSignature;
             }
             return Approval;
         }
@@ -166,7 +175,7 @@ namespace EcoCoinValidator
             {
                 if (File.FileName.Contains(".acc"))
                 {
-                    if (!System.IO.File.Exists(GlobalVars.AccountStoragePath + File.FileName) || GlobalFunctions.HashFile(GlobalVars.AccountStoragePath + File.FileName) != File.FileHash)
+                    if (!System.IO.File.Exists(GlobalVars.AccountStoragePath + File.FileName) || !GlobalFunctions.HashFile(GlobalVars.AccountStoragePath + File.FileName).AsSpan().SequenceEqual(File.FileHash))
                     {
                         AccountDetails.DownloadAccountFile(Guid.Parse(File.FileName.Replace(".acc", "")));
                     }

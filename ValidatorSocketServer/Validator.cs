@@ -1,6 +1,7 @@
 ﻿using EcoCoinSharedTypes;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Design;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -68,37 +69,93 @@ namespace ValidatorSocketServer
 
         private void ReceiveData()
         {
-            byte[] buffer = new byte[1024];
-            int bytesRead;
-            while (true)
+            List<byte> messageBuffer = new List<byte>();
+
+            while (ValidatorSocket.Connected)
             {
                 try
                 {
-                    bytesRead = ValidatorSocket.Receive(buffer);
-                    if (bytesRead > 0)
+                    byte[] buffer = new byte[ValidatorSocket.Available];
+
+                    if (buffer.Length == 0)
                     {
-                        byte[] receivedData = new byte[bytesRead];
-                        Array.Copy(buffer, receivedData, bytesRead);
-
-                        TransactionValidationResponseEnvelope TVRE = System.Text.Json.JsonSerializer.Deserialize<TransactionValidationResponseEnvelope>(receivedData);
-
-                        Controller.ProcessValidatorResponse(TVRE);
+                        buffer = new byte[1];
                     }
-                }
-                catch (SocketException ex)
-                {
-                    Console.WriteLine("Socket exception: " + ex.Message);
+
+                    ValidatorSocket.Receive(buffer);
+
+                    foreach (byte b in buffer)
+                    {
+                        messageBuffer.Add(b);
+
+                        if (System.Text.UTF8Encoding.UTF8.GetString(messageBuffer.ToArray()).EndsWith("☺"))
+                        {
+                            messageBuffer.RemoveAt(messageBuffer.Count - 1);
+                            messageBuffer.RemoveAt(messageBuffer.Count - 1);
+                            messageBuffer.RemoveAt(messageBuffer.Count - 1);
+
+                            Console.WriteLine("JSON Parsing TVRE: " + System.Text.UTF8Encoding.UTF8.GetString(messageBuffer.ToArray()));
+
+                            TransactionValidationResponseEnvelope TVRE = System.Text.Json.JsonSerializer.Deserialize<TransactionValidationResponseEnvelope>(messageBuffer.ToArray());
+
+                            messageBuffer.Clear();
+
+
+                            Console.ForegroundColor = ConsoleColor.Magenta;
+                            Console.WriteLine("Received validation response from validator " + sIPAddress + ":");
+                            Console.WriteLine("    ID: " + TVRE.ValidationResponse.TransactionID);
+                            Console.WriteLine("    Approval: " + TVRE.ValidationResponse.Approved.ToString());
+                            if (!TVRE.ValidationResponse.Approved)
+                            {
+                                Console.WriteLine("    Deny Reason: " + TVRE.ValidationResponse.DenyReason);
+                            }
+
+                            Controller.ProcessValidatorResponse(TVRE, this);
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("Exception: " + ex.Message);
+                    if (ex.Message == "An existing connection was forcibly closed by the remote host." || ex.Message == "A request to send or receive data was disallowed because the socket is not connected and (when sending on a datagram socket using a sendto call) no address was supplied.")
+                    {
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        Console.WriteLine("Validator dropped connection");
+                        try
+                        {
+                            Controller.ValidatorConnections.Remove(this);
+                        }
+                        catch (Exception ex2)
+                        {
+                            Console.ForegroundColor = ConsoleColor.Red;
+                            Console.WriteLine("Error removing validator connection from controller list: " + ex2.Message);
+                        }
+
+                        try
+                        {
+                            ValidatorSocket.Dispose();
+                        }
+                        catch (Exception ex2)
+                        {
+                            Console.ForegroundColor = ConsoleColor.Red;
+                            Console.WriteLine("Error disposing validator connection: " + ex2.Message);
+                        }
+                    }
+                    else
+                    {
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine("Error while receiving validation response from validator: " + ex.Message);
+                    }
                 }
             }
         }
 
         internal int Send(byte[] Message)
         {
-            return ValidatorSocket.Send(Message);
+            int BytesSent =  ValidatorSocket.Send(Message);
+
+            ValidatorSocket.Send(new byte[] { 0x01 });
+
+            return BytesSent;
         }
 
         public Guid ValidatorID

@@ -3,6 +3,7 @@ using GenericDataAccessClassCore;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Net.Sockets;
 using System.Security.Cryptography;
@@ -39,16 +40,32 @@ namespace ValidatorSocketServer
 
             if (EcoCoinSharedTypes.GlobalVars.EnvironmentType == EnvironmentType.Production)
             {
-                EcoCoinSharedTypes.GlobalVars.AccountStoragePath = "G:/EcoCoinData/ChainData/Accounts/";
-                EcoCoinSharedTypes.GlobalVars.ECORootStoragePath = "G:/EcoCoinData/";
+                if (System.Diagnostics.Debugger.IsAttached)
+                {
+                    EcoCoinSharedTypes.GlobalVars.AccountStoragePath = "G:/EcoCoinData/ChainData/Accounts/";
+                    EcoCoinSharedTypes.GlobalVars.ECORootStoragePath = "G:/EcoCoinData/";
+                }
+                else
+                {
+                    EcoCoinSharedTypes.GlobalVars.AccountStoragePath = "C:/EcoCoinData/ChainData/Accounts/";
+                    EcoCoinSharedTypes.GlobalVars.ECORootStoragePath = "C:/EcoCoinData/";
+                }
                 EcoCoinSharedTypes.GlobalVars.AEOfficialServerAccount = Guid.Parse("086e33a8-d884-4b6f-ac37-5afd81091807");
                 EcoCoinSharedTypes.GlobalVars.AEAccountCreationAccount = Guid.Parse("a6479df0-445a-4376-b3ed-6dd89fc51cf9");
                 EcoCoinSharedTypes.GlobalVars.LocalSigningKeyID = 0;
             }
             else
             {
-                EcoCoinSharedTypes.GlobalVars.AccountStoragePath = "G:/EcoCoinDataTest/ChainData/Accounts/";
-                EcoCoinSharedTypes.GlobalVars.ECORootStoragePath = "G:/EcoCoinDataTest/";
+                if (System.Diagnostics.Debugger.IsAttached)
+                {
+                    EcoCoinSharedTypes.GlobalVars.AccountStoragePath = "G:/EcoCoinDataTest/ChainData/Accounts/";
+                    EcoCoinSharedTypes.GlobalVars.ECORootStoragePath = "G:/EcoCoinDataTest/";
+                }
+                else
+                {
+                    EcoCoinSharedTypes.GlobalVars.AccountStoragePath = "C:/EcoCoinDataTest/ChainData/Accounts/";
+                    EcoCoinSharedTypes.GlobalVars.ECORootStoragePath = "C:/EcoCoinDataTest/";
+                }
                 EcoCoinSharedTypes.GlobalVars.AEOfficialServerAccount = Guid.Parse("43cfec16-6306-4a13-8b63-b6fbcd3f96af");
                 EcoCoinSharedTypes.GlobalVars.AEAccountCreationAccount = Guid.Parse("54b94908-6924-4b0b-9b1b-b4818184acc1");
                 EcoCoinSharedTypes.GlobalVars.LocalSigningKeyID = 0;
@@ -62,19 +79,22 @@ namespace ValidatorSocketServer
         {
             ActiveTransactionRequests.Add(TRE);
 
+            TransactionRequestEnvelope SendTRE = GlobalFunctions.DeepCopy(TRE);
+
             SQLParameterCollection Params = new SQLParameterCollection();
 
-            Params.AddParameter("TransactionID", TRE.Request.TransactionID);
-            Params.AddParameter("Status", TransactionStatus.Validating);
+            Params.AddParameter("TransactionRequestID", TRE.Request.TransactionID);
+            Params.AddParameter("Status", TransactionStatus.Validating.ToString());
 
-            GlobalVars.DB.DBUpdate("UPDATE TransactionRequests SET Status = @Status WHERE TransactionID = @TransactionID", Params);
+            GlobalVars.DB.DBUpdate("UPDATE TransactionRequests SET Status = @Status WHERE TransactionRequestID = @TransactionRequestID", Params);
 
             //if there are less than 150 validators, send to all validators
             if (ValidatorConnections.Count <= 150)
             {
+                TRE.Request.IssuedValidatorCount = ValidatorConnections.Count;
                 foreach (Validator V in ValidatorConnections)
                 {
-                    byte[] data = GlobalFunctions.SerializeObjectToByteArray(TRE);
+                    byte[] data = GlobalFunctions.SerializeObjectToByteArray(SendTRE);
 
                     V.Send(data);
                 }
@@ -143,7 +163,8 @@ namespace ValidatorSocketServer
                 //send to those selected validators
                 foreach (Validator V in ValidatorsToSendTo)
                 {
-                    byte[] data = GlobalFunctions.SerializeObjectToByteArray(TRE);
+                    TRE.Request.IssuedValidatorCount = ValidatorsToSendTo.Count;
+                    byte[] data = GlobalFunctions.SerializeObjectToByteArray(SendTRE);
                     V.Send(data);
                 }
             }
@@ -175,48 +196,64 @@ namespace ValidatorSocketServer
         }
         #endregion
 
-        internal static void ProcessValidatorResponse(TransactionValidationResponseEnvelope TVRE)
+        internal static void ProcessValidatorResponse(TransactionValidationResponseEnvelope TVRE, Validator SourceValidator)
         {
             TransactionRequestEnvelope TRE = GetActiveRequest(TVRE.ValidationResponse);
             if (TRE != null)
             {
                 //Found transaction request
 
-                //Validate the response from the validator
-                if (VerifyTransactionValidationResponseSignature(TVRE))
-                {
-                    if (TRE.Request.TransactionLatticeEntry == null)
-                    {
-                        TRE.Request.TransactionLatticeEntry = new LatticeEntry(TRE.Request);
-                    }
 
-                    if (TVRE.ValidationResponse.Approved)
+                Console.WriteLine("    Round trip speed: " + (DateTime.UtcNow - TRE.Request.TransactionStartDate).TotalSeconds + " Seconds");
+
+                //Validate the response from the validator
+                if (VerifyValidatorHasPrimaryVerifiedPerson(TVRE))
+                {
+                    if (VerifyTransactionValidationResponseSignature(TVRE))
                     {
-                        TRE.Request.TransactionLatticeEntry.ApprovingValidators.Add(TVRE.ValidatorID);
+                        //once the signature has been verified, mark the validator socket object with the validator's ID
+                        SourceValidator.ValidatorID = TVRE.ValidatorID;
+
+                        if (TRE.Request.TransactionLatticeEntry == null)
+                        {
+                            TRE.Request.TransactionLatticeEntry = new LatticeEntry(TRE.Request);
+                        }
+
+                        if (TVRE.ValidationResponse.Approved)
+                        {
+                            TRE.Request.TransactionLatticeEntry.ApprovingValidators.Add(TVRE.ValidatorID);
+                        }
+                        else
+                        {
+                            TRE.Request.TransactionLatticeEntry.DisapprovingValidators.Add(TVRE.ValidatorID);
+                        }
+
+
+                        SQLParameterCollection Params = new SQLParameterCollection();
+
+                        Params.AddParameter("TransactionRequestID", TRE.Request.TransactionID);
+                        Params.AddParameter("ApprovingValidators", TRE.Request.TransactionLatticeEntry.ApprovingValidators.Count);
+                        Params.AddParameter("DisapprovingValidators", TRE.Request.TransactionLatticeEntry.DisapprovingValidators.Count);
+                        Params.AddParameter("Status", TransactionStatus.Validating.ToString());
+
+                        GlobalVars.DB.DBUpdate("UPDATE TransactionRequests SET ApproveValidatorCount = @ApprovingValidators, DenyValidatorCount = @DisapprovingValidators, Status = @Status WHERE TransactionRequestID = @TransactionRequestID", Params);
+
+                        Console.WriteLine("    Approvers: " + TRE.Request.TransactionLatticeEntry.ApprovingValidators.Count.ToString() + " Deniers: " + TRE.Request.TransactionLatticeEntry.DisapprovingValidators.Count.ToString() + " Validators Issued: " + TRE.Request.IssuedValidatorCount.ToString());
+
+
+                        if (TRE.Request.TransactionLatticeEntry.ApprovingValidators.Count + TRE.Request.TransactionLatticeEntry.DisapprovingValidators.Count == TRE.Request.IssuedValidatorCount || TRE.Request.TransactionLatticeEntry.ApprovingValidators.Count + TRE.Request.TransactionLatticeEntry.DisapprovingValidators.Count > 99)
+                        {
+                            CompleteTransactionRequest(TRE);
+                        }
                     }
                     else
                     {
-                        TRE.Request.TransactionLatticeEntry.DisapprovingValidators.Add(TVRE.ValidatorID);
-                    }
-
-
-                    SQLParameterCollection Params = new SQLParameterCollection(); 
-
-                    Params.AddParameter("TransactionID", TRE.Request.TransactionID);
-                    Params.AddParameter("ApprovingValidators", TRE.Request.TransactionLatticeEntry.ApprovingValidators.Count);
-                    Params.AddParameter("DisapprovingValidators", TRE.Request.TransactionLatticeEntry.DisapprovingValidators.Count);
-                    Params.AddParameter("Status", TransactionStatus.Validating);
-
-                    GlobalVars.DB.DBUpdate("UPDATE TransactionRequests SET ApprovingValidators = @ApprovingValidators, DisapprovingValidators = @DisapprovingValidators, Status = @Status WHERE TransactionID = @TransactionID", Params);
-
-                    if (TRE.Request.TransactionLatticeEntry.ApprovingValidators.Count + TRE.Request.TransactionLatticeEntry.DisapprovingValidators.Count == TRE.Request.IssuedValidatorCount || TRE.Request.TransactionLatticeEntry.ApprovingValidators.Count + TRE.Request.TransactionLatticeEntry.DisapprovingValidators.Count > 99)
-                    {
-                        CompleteTransactionRequest(TRE);
+                        Console.WriteLine("Invalid signature from validator detected. Validator ID: " + TVRE.ValidatorID.ToString() + " TransactionID: " + TVRE.ValidationResponse.TransactionID.ToString());
                     }
                 }
                 else
                 {
-                    Console.WriteLine("Invalid signature from validator detected. Validator ID: " + TVRE.ValidatorID.ToString() + " TransactionID: " + TVRE.ValidationResponse.TransactionID.ToString());
+                    Console.WriteLine("Invalid validator detected.  No Primary verification on account.  Validator ID: " + TVRE.ValidatorID.ToString() + " TransactionID: " + TVRE.ValidationResponse.TransactionID.ToString());
                 }
             }
             else
@@ -229,24 +266,39 @@ namespace ValidatorSocketServer
             //move from active to completed lists
             ActiveTransactionRequests.Remove(TRE);
             CompletedTransactionRequests.Add(TRE);
-            
+
+            Guid NewAccountID = new Guid();
+
+            Console.WriteLine("    Validation Complete for " + TRE.Request.TransactionID.ToString());
+
             bool isApproved = ComputeApproval(TRE.Request);
 
             if (isApproved)
             {
+                Console.WriteLine("    Executing Transaction...");
                 TransactionRequest TR = TRE.Request;
 
                 //update accounts and write blocks to relevant lattices
                 switch (TR.RequestType)
                 {
                     case RequestType.CreateAccount:
+
+                        Console.WriteLine("    Creating Account...");
+
                         AccountDetails AD = AccountDetails.CreateAccount(TR.AccountName, TR.InitialPublicKey);
+
+                        NewAccountID = AD.AccountID;
 
                         AD.SaveAccountToFile();
 
+                        Console.WriteLine("    Updating Block Lattice...");
+
                         LatticeEntry LE = TR.TransactionLatticeEntry;
+                        LE.AccountID = AD.AccountID;
 
                         LE.AppendEntryToLatticeFile();
+
+                        Console.WriteLine("Account Creation Complete");
                         break;
                     case RequestType.AddKey:
                         AccountDetails AD2 = new AccountDetails(TR.AccountID);
@@ -295,11 +347,20 @@ namespace ValidatorSocketServer
 
                 SQLParameterCollection Params = new SQLParameterCollection();
 
-                Params.AddParameter("TransactionID", TRE.Request.TransactionID);
-                Params.AddParameter("Status", TransactionStatus.Approved);
+                Params.AddParameter("TransactionRequestID", TRE.Request.TransactionID);
+                Params.AddParameter("Status", TransactionStatus.Approved.ToString());
                 Params.AddParameter("TransactionEndDate", DateTime.UtcNow);
 
-                GlobalVars.DB.DBUpdate("UPDATE TransactionRequests SET Status = @Status, TransactionEndDate = @TransactionEndDate WHERE TransactionID = @TransactionID", Params);
+                if (TR.RequestType == RequestType.CreateAccount)
+                {
+                    Params.AddParameter("NewAccountID", NewAccountID);
+                }
+                else
+                {
+                    Params.AddParameter("NewAccountID", null);
+                }
+
+                GlobalVars.DB.DBUpdate("UPDATE TransactionRequests SET Status = @Status, TransactionEndDate = @TransactionEndDate, NewAccountID = @NewAccountID WHERE TransactionRequestID = @TransactionRequestID", Params);
             }
             else //ties also disapprove automatically.
             {
@@ -338,11 +399,11 @@ namespace ValidatorSocketServer
 
                 SQLParameterCollection Params = new SQLParameterCollection();
 
-                Params.AddParameter("TransactionID", TRE.Request.TransactionID);
-                Params.AddParameter("Status", TransactionStatus.Denied);
+                Params.AddParameter("TransactionRequestID", TRE.Request.TransactionID);
+                Params.AddParameter("Status", TransactionStatus.Denied.ToString());
                 Params.AddParameter("TransactionEndDate", DateTime.UtcNow);
 
-                GlobalVars.DB.DBUpdate("UPDATE TransactionRequests SET Status = @Status, TransactionEndDate = @TransactionEndDate WHERE TransactionID = @TransactionID", Params);
+                GlobalVars.DB.DBUpdate("UPDATE TransactionRequests SET Status = @Status, TransactionEndDate = @TransactionEndDate WHERE TransactionRequestID = @TransactionRequestID", Params);
             }
         }
 
@@ -358,7 +419,14 @@ namespace ValidatorSocketServer
                 SQLParameterCollection Params = new SQLParameterCollection();
                 Params.AddParameter("ValidatorID", Approver);
 
-                decimal ValidatorReputation = decimal.Parse(GlobalVars.DB.DBSelect("SELECT TotalReputation FROM ValidatorReputation WHERE ValidatorID = @ValidatorID", Params).Tables[0].Rows[0]["TotalReputation"].ToString());
+                DataTable dtRep = GlobalVars.DB.DBSelect("SELECT TotalReputation FROM ValidatorReputation WHERE ValidatorID = @ValidatorID", Params).Tables[0];
+
+                decimal ValidatorReputation = 1;
+
+                if (dtRep.Rows.Count > 0)
+                {
+                     ValidatorReputation = decimal.Parse(dtRep.Rows[0]["TotalReputation"].ToString());
+                }
 
                 if (V.Hosted)
                 {
@@ -406,6 +474,28 @@ namespace ValidatorSocketServer
             return isApproved;
         }
 
+        internal static bool VerifyValidatorHasPrimaryVerifiedPerson(TransactionValidationResponseEnvelope TVRE)
+        {
+            bool isValid = false;
+
+            AccountDetails AD = new AccountDetails(TVRE.ValidatorID);
+
+            if (AD.VerifiedMembers.Count > 0)
+            {
+
+                foreach (VerifiedMember VM in AD.VerifiedMembers)
+                {
+                    if (VM.IsPrimaryVerification)
+                    {
+                        isValid = true;
+                        break;
+                    }
+                }
+            }
+
+            return isValid;
+        }
+
         internal static bool VerifyTransactionValidationResponseSignature(TransactionValidationResponseEnvelope TVRE)
         {
             bool isValid = false;
@@ -414,34 +504,18 @@ namespace ValidatorSocketServer
 
             AccountDetails AD = new AccountDetails(TVRE.ValidatorID);
 
-            if (AD.VerifiedMembers.Count > 0)
+
+            foreach (KeyPair KP in AD.ApprovedKeys)
             {
-                bool hasPrimary = false;
+                rsa.ImportFromPem(KP.PublicKey);
 
-                foreach (VerifiedMember VM in AD.VerifiedMembers)
+                if (rsa.VerifyData(GlobalFunctions.SerializeObjectToByteArray(TVRE.ValidationResponse), TVRE.ValidatorSignature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1))
                 {
-                    if (VM.IsPrimaryVerification)
+                    if (KP.Permissions.ValidatingEnabled)
                     {
-                        hasPrimary = true;
-                        break;
+                        isValid = true;
                     }
-                }
-
-                if (hasPrimary)
-                {
-                    foreach (KeyPair KP in AD.ApprovedKeys)
-                    {
-                        rsa.ImportFromPem(KP.PublicKey);
-
-                        if (rsa.VerifyData(GlobalFunctions.SerializeObjectToByteArray(TVRE.ValidationResponse), Convert.FromHexString(TVRE.ValidatorSignature), HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1))
-                        {
-                            if (KP.Permissions.ValidatingEnabled)
-                            {
-                                isValid = true;
-                            }
-                            break;
-                        }
-                    }
+                    break;
                 }
             }
 

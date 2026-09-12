@@ -6,24 +6,35 @@ using System.Text;
 using System.Threading.Tasks;
 using EcoCoinSharedTypes;
 using EcoCoinValidator.Account;
+using Newtonsoft.Json.Linq;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace EcoCoinValidator
 {
     public class Controller
     {
-        MessageReceiver MR;
+        internal MessageReceiver MR;
+        internal static Guid LocalAccountID;
+        internal static int LocalKeyID;
 
         public Controller()
         {
-            if (System.Diagnostics.Debugger.IsAttached)
+            var Settings = (JObject.Parse(System.IO.File.ReadAllText(AppContext.BaseDirectory + "appconfig.json")));
+
+            Console.ForegroundColor = ConsoleColor.Green;
+            if (Settings["Environment"].ToString() == "TEST")
             {
-                GlobalVars.EnvironmentType = EnvironmentType.Test;
+                Console.WriteLine("Running in: TEST");
+                EcoCoinSharedTypes.GlobalVars.EnvironmentType = EnvironmentType.Test;
             }
             else
             {
-                GlobalVars.EnvironmentType = EnvironmentType.Production;
+                Console.WriteLine("Running in: PROD");
+                EcoCoinSharedTypes.GlobalVars.EnvironmentType = EnvironmentType.Production;
             }
+
+            LocalAccountID = Guid.Parse(Settings["ValidatingAccountID"].ToString());
+            LocalKeyID = int.Parse(Settings["ValidatingKeyID"].ToString());
 
             if (GlobalVars.EnvironmentType == EnvironmentType.Production)
             {

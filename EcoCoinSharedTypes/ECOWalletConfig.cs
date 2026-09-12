@@ -8,14 +8,15 @@ namespace EcoCoinSharedTypes
 {
     public class ECOWalletConfig
     {
-        private List<AccountDetails> lAccounts;
+        private List<Guid> lAccounts;
+        public EnvironmentType EnvironmentType;
 
         public ECOWalletConfig()
         {
-            lAccounts = new List<AccountDetails>();
+            lAccounts = new List<Guid>();
         }
 
-        public List<AccountDetails> Accounts
+        public List<Guid> Accounts
         {
             get 
             { 
@@ -27,28 +28,6 @@ namespace EcoCoinSharedTypes
             }
         }
 
-        public void SaveToFile()
-        {
-            using (System.IO.FileStream FS = new FileStream(GlobalVars.ECORootStoragePath + "ECOWalletConfig.json", FileMode.Create))
-            {
-                byte[] buffer = GlobalFunctions.SerializeObjectToByteArray(this);
 
-                FS.Write(buffer, 0, buffer.Length);
-            }
-        }
-
-        public static ECOWalletConfig LoadFromFile()
-        {
-            using (System.IO.FileStream FS = new FileStream(GlobalVars.ECORootStoragePath + "ECOWalletConfig.json", FileMode.Open))
-            {
-                byte[] Data = new byte[FS.Length];
-
-                FS.Read(Data, 0, Data.Length);
-
-                ECOWalletConfig WC = System.Text.Json.JsonSerializer.Deserialize<ECOWalletConfig>(Data);
-
-                return WC;
-            }
-        }
     }
 }

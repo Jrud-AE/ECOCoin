@@ -93,7 +93,7 @@ namespace EcoCoinSharedTypes
             switch (rtRequestType)
             {
                 case RequestType.CreateAccount:
-                    AddFileToInvolvedFileList(Guid.Parse("a6479df0-445a-4376-b3ed-6dd89fc51cf9"));
+                    AddFileToInvolvedFileList(EcoCoinSharedTypes.GlobalVars.AEAccountCreationAccount);
                     break;
                 case RequestType.AddKey:
                     AddFileToInvolvedFileList(gAccountID);
@@ -186,8 +186,8 @@ namespace EcoCoinSharedTypes
         public TransactionRequestEnvelope() { }
         public TransactionRequestEnvelope(TransactionRequest Request, byte[] TransactionSignature)
         {
-            this.Request = Request;
-            this.EnvelopeSignature = TransactionSignature;
+            this.trRequest = Request;
+            this.bTransactionSignature = TransactionSignature;
         }
     }
 }

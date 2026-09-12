@@ -10,6 +10,7 @@
         public static int LocalSigningKeyID;
         public static ECOWalletConfig ECOWalletConfiguration;
         private static object Conch = new object();
+        public static string ServerURLBase;
 
         private static GenericDataAccessClassCore.DBMC oDB;
 

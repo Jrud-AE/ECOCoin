@@ -1,4 +1,5 @@
 ﻿using EcoCoinSharedTypes;
+using System.Text.Json;
 
 namespace EcoWallet
 {
@@ -9,21 +10,13 @@ namespace EcoWallet
             InitializeComponent();
 
             Routing.RegisterRoute("CreateAccountPage", typeof(CreateAccountPage));
+            Routing.RegisterRoute("WaitingForTransaction", typeof(WaitingForTransaction));
 
-            GlobalVars.ECORootStoragePath = "G:/EcoCoinDataTest/";
+            EcoCoinSharedTypes.GlobalVars.ECORootStoragePath = "G:/EcoCoinDataTest/";
 
-            if (!System.IO.File.Exists(GlobalVars.ECORootStoragePath + "ECOWalletConfig.json"))
-            {
-                ECOWalletConfig WC = new ECOWalletConfig();
 
-                WC.SaveToFile();
+            EcoCoinSharedTypes.GlobalVars.ECOWalletConfiguration = System.Text.Json.JsonSerializer.Deserialize<ECOWalletConfig>(Preferences.Default.Get("WalletConfig", JsonSerializer.Serialize(new ECOWalletConfig())).ToString());
 
-                GlobalVars.ECOWalletConfiguration = WC;
-            }
-            else
-            {
-                GlobalVars.ECOWalletConfiguration = ECOWalletConfig.LoadFromFile();
-            }
         }
     }
 }

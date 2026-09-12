@@ -1,18 +1,25 @@
 ﻿using EcoCoinSharedTypes;
+#if WINDOWS
+using System.Reflection;
+using Microsoft.UI.Input;
+#elif MACCATALYST
+using AppKit;
+using UIKit;
+#endif
 
 namespace EcoWallet
 {
     public partial class MainPage : ContentPage
     {
-        int count = 0;
-
         public MainPage()
         {
             InitializeComponent();
 
-            if (GlobalVars.ECOWalletConfiguration.Accounts.Count > 0)
+            if (EcoCoinSharedTypes.GlobalVars.ECOWalletConfiguration.Accounts.Count > 0)
             {
-                lblAccountNumber.Text = "Account: " + GlobalVars.ECOWalletConfiguration.Accounts[0].AccountName + "(" + GlobalVars.ECOWalletConfiguration.Accounts[0].AccountID.ToString() + ")";
+                AccountDetails AD = new AccountDetails(EcoCoinSharedTypes.GlobalVars.ECOWalletConfiguration.Accounts[0]);
+
+                lblAccountNumber.Text = "Account: " + AD.AccountName + "(" + AD.AccountID.ToString() + ")";
             }
             else
             {
@@ -23,9 +30,9 @@ namespace EcoWallet
 
         private void OnPageRegainFocus(object sender, EventArgs e)
         {
-            if (GlobalVars.ECOWalletConfiguration.Accounts.Count > 0)
+            if (EcoCoinSharedTypes.GlobalVars.ECOWalletConfiguration.Accounts.Count > 0)
             {
-                lblAccountNumber.Text = "Account: " + GlobalVars.ECOWalletConfiguration.Accounts[0].AccountName + "(" + GlobalVars.ECOWalletConfiguration.Accounts[0].AccountID.ToString() + ")";
+                FillOutAccountBalance();
             }
             else
             {
@@ -34,16 +41,69 @@ namespace EcoWallet
             }
         }
 
-        private void OnCounterClicked(object sender, EventArgs e)
+        private void FillOutAccountBalance()
         {
-            count++;
+            AccountDetails AD = new AccountDetails(EcoCoinSharedTypes.GlobalVars.ECOWalletConfiguration.Accounts[0]);
 
-            if (count == 1)
-                CounterBtn.Text = $"Clicked {count} time";
-            else
-                CounterBtn.Text = $"Clicked {count} times";
+            lblAccountNumber.Text = "Account: " + AD.AccountName + " (" + AD.AccountID.ToString() + ")";
 
-            SemanticScreenReader.Announce(CounterBtn.Text);
+            lblTotalBalance.Text = AD.PrimaryBalance.ToString() + " ECO";
+
+            decimal HoldAmount = 0;
+
+            foreach (BalanceHold BH in AD.BalanceHolds)
+            {
+                HoldAmount += BH.HoldAmount;
+            }
+
+            lblHeld.Text = HoldAmount.ToString() + " ECO";
+        }
+
+        private void PointerGestureRecognizer_PointerExited(object sender, Microsoft.Maui.Controls.PointerEventArgs e)
+        {
+            ChangeCursor(sender as VisualElement, true);
+        }
+
+        private void PointerGestureRecognizer_PointerEntered(object sender, Microsoft.Maui.Controls.PointerEventArgs e)
+        {
+            ChangeCursor(sender as VisualElement, false);
+        }
+
+        private void ChangeCursor(VisualElement element, bool isHovered)
+        {
+            if (element?.Handler?.PlatformView == null) return;
+
+#if WINDOWS
+    var nativeView = element.Handler.PlatformView as Microsoft.UI.Xaml.UIElement;
+    if (nativeView != null)
+    {
+        // Define the shape (Hand or default Arrow)
+        var cursor = isHovered 
+            ? InputSystemCursor.Create(InputSystemCursorShape.Hand) 
+            : null;
+
+        // Bypass the protection level restriction using reflection
+        typeof(Microsoft.UI.Xaml.UIElement).InvokeMember(
+            "ProtectedCursor",
+            BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.SetProperty,
+            null,
+            nativeView,
+            new object[] { cursor });
+    }
+#elif MACCATALYST
+    var nativeView = element.Handler.PlatformView as UIView;
+    if (nativeView != null)
+    {
+        if (isHovered)
+        {
+            NSCursor.PointingHandCursor.Set();
+        }
+        else
+        {
+            NSCursor.ArrowCursor.Set();
+        }
+    }
+#endif
         }
     }
 

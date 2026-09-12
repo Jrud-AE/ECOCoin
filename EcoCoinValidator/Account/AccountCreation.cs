@@ -20,18 +20,22 @@ namespace EcoCoinValidator.Account
             if (TranReq.TransactionSignerID == GlobalVars.AEAccountCreationAccount)
             {
                 bool VerifyResult = false;
-                AccountDetails SignerAccount = new AccountDetails(TranReq.TransactionSignerID);
+                AccountDetails SignerAccount = new AccountDetails(GlobalVars.AEAccountCreationAccount);
 
                 using (RSA rsa = RSA.Create())
                 {
                     foreach (KeyPair KP in SignerAccount.ApprovedKeys)
                     {
                         rsa.ImportFromPem(KP.PublicKey);
+                        string TransactionSignatureInternal = TranReq.TransactionSignature;
+                        TranReq.TransactionSignature = null;
 
-                        if (rsa.VerifyData(GlobalFunctions.SerializeObjectToByteArray(TranReq), TransactionSignature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1))
+                        if (rsa.VerifyData(GlobalFunctions.SerializeObjectToByteArray(TranReq), Convert.FromHexString(TransactionSignatureInternal), HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1))
                         {
                             VerifyResult = true;
                         }
+
+                        TranReq.TransactionSignature = TransactionSignatureInternal;
                     }
                 }
                 //CHECK 2: Verify that the Automate Earth account creation account is the one that signed the request.
@@ -44,29 +48,21 @@ namespace EcoCoinValidator.Account
                         if (TranReq.AccountName.Length > 0)
                         {
                             //CHECK 5: Verify that the account name only contains approved characters
-                            string ApprovedChars = "^[a-zA-Z0-9]+$";
+                            string ApprovedChars = "^[a-zA-Z0-9 ]+$";
 
-                            if (Regex.IsMatch(TranReq.AccountName, ApprovedChars))
+                            if (Regex.IsMatch(TranReq.AccountName, ApprovedChars) && !TranReq.AccountName.Contains("  "))
                             {
                                 //CHECK 6: Verify that the initial public key is valid
                                 if (AddKey.IsKeyValid(TranReq.InitialPublicKey))
                                 {
-                                    //CHECK 7: Verify that the initial public key is not already on the account
-                                    if (!AddKey.IsKeyAlreadyOnAccount(SignerAccount, TranReq.InitialPublicKey))
+                                    //CHECK 7: Verify that NOnce is 0 on initial account creation
+                                    if (TranReq.NOnce == 0)
                                     {
-                                        //CHECK 8: Verify that NOnce is 0 on initial account creation
-                                        if (TranReq.NOnce == 0)
-                                        {
-                                            Approval.Approved = true;
-                                        }
-                                        else
-                                        {
-                                            Approval.DenyReason = "The NOnce must be 0 on initial account creation.";
-                                        }
+                                        Approval.Approved = true;
                                     }
                                     else
                                     {
-                                        Approval.DenyReason = "The initial public key is already on the account.";
+                                        Approval.DenyReason = "The NOnce must be 0 on initial account creation.";
                                     }
                                 }
                                 else

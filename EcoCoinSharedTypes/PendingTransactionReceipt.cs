@@ -43,6 +43,10 @@ namespace EcoCoinSharedTypes
             ptrReceipt = Receipt;
             bTransactionSignature = TransactionSignature;
         }
+        public PendingTransactionReceiptEnvelope()
+        {
+
+        }
         public PendingTransactionReceipt Receipt
         {
             get { return ptrReceipt; }

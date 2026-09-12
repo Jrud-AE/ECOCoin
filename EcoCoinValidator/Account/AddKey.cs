@@ -71,13 +71,14 @@ namespace EcoCoinValidator.Account
                 try
                 {
                     // Create an ephemeral RSA instance
-                    using var rsa = RSA.Create();
+                    using (RSA rsa = RSA.Create())
+                    {
+                        // This parses both standard SubjectPublicKeyInfo and PKCS#1 RSA public keys
+                        rsa.ImportFromPem(pemKey);
 
-                    // This parses both standard SubjectPublicKeyInfo and PKCS#1 RSA public keys
-                    rsa.ImportFromPem(pemKey.AsSpan());
-
-                    // If it imports without throwing, the key structure is valid
-                    Valid = true;
+                        // If it imports without throwing, the key structure is valid
+                        Valid = true;
+                    }
                 }
                 catch (Exception)
                 {

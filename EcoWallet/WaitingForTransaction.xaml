@@ -2,13 +2,24 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="EcoWallet.WaitingForTransaction"
-             Title="ECO Wallet - Waiting for Transaction">
+             Title="ECO Wallet - Waiting for Transaction"
+             NavigatedTo="OnPageLoad">
     <ScrollView>
-        <VerticalStackLayout>
-            <Label 
-            Text="Welcome to .NET MAUI!"
-            VerticalOptions="Center" 
-            HorizontalOptions="Center" />
+        <VerticalStackLayout Padding="30,0" Spacing="25">
+            <Label Text="Waiting For Transaction" VerticalOptions="Center" HorizontalOptions="Center" Style="{StaticResource Headline}" />
+
+            <Label Text="Transaction Details:" HorizontalOptions="Center" Style="{StaticResource SubHeadline}" />
+            <Grid WidthRequest="500" HeightRequest="100" Margin="0,20,0,0">
+                <Label Text="ID: " x:Name="lblID" HorizontalOptions="Start" Margin="0,0,0,0"/>
+
+                <Label Text="Type: " x:Name="lblType" HorizontalOptions="Start" Margin="0,20,0,0"/>
+
+                <Label Text="Status: " x:Name="lblStatus" HorizontalOptions="Start" Margin="0,40,0,0"/>
+
+                <Label Text="Started: " x:Name="lblTiming" HorizontalOptions="Start" Margin="0,60,0,0"/>
+
+                <Label Text="Validation Status: " x:Name="lblValidationStatus" HorizontalOptions="Start" Margin="0,80,0,0"/>
+            </Grid>
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

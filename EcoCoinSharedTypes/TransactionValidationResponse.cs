@@ -12,6 +12,11 @@ namespace EcoCoinSharedTypes
         private bool bApproved;
         private string sDenyReason;
 
+        public TransactionValidationResponse()
+        {
+
+        }
+
         public bool Approved
         {
             get { return bApproved; }
@@ -34,7 +39,12 @@ namespace EcoCoinSharedTypes
     {
         private TransactionValidationResponse tValidationResponse;
         private Guid gValidatorID;
-        private string sValidatorSignature;
+        private byte[] bValidatorSignature;
+
+        public TransactionValidationResponseEnvelope()
+        {
+
+        }
         public TransactionValidationResponse ValidationResponse
         {
             get { return tValidationResponse; }
@@ -45,10 +55,10 @@ namespace EcoCoinSharedTypes
             get { return gValidatorID; }
             set { gValidatorID = value; }
         }
-        public string ValidatorSignature
+        public byte[] ValidatorSignature
         {
-            get { return sValidatorSignature; }
-            set { sValidatorSignature = value; }
+            get { return bValidatorSignature; }
+            set { bValidatorSignature = value; }
         }
     }
 }

@@ -1,0 +1,13 @@
+{
+  "exclude": [
+    "**/bin",
+    "**/bower_components",
+    "**/jspm_packages",
+    "**/node_modules",
+    "**/obj",
+    "**/platforms"
+  ],
+  "Environment": "TEST",
+  "ValidatingAccountID": "43cfec16-6306-4a13-8b63-b6fbcd3f96af",
+  "ValidatingKeyID": 0
+}

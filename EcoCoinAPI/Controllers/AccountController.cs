@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Cryptography;
+using System.Text.Json;
 
 namespace EcoCoinAPI.Controllers
 {
@@ -35,7 +36,7 @@ namespace EcoCoinAPI.Controllers
             TR.TransactionSignerID = EcoCoinSharedTypes.GlobalVars.AEAccountCreationAccount;
             TR.TransactionSignerKeyID = 0;
             TR.AccountName = AccountName;
-            TR.InitialPublicKey = InitialPublicKey;
+            TR.InitialPublicKey = InitialPublicKey.Replace(" ", "+").Replace("BEGIN+PUBLIC+KEY", "BEGIN PUBLIC KEY").Replace("END+PUBLIC+KEY", "END PUBLIC KEY");
             TR.NOnce = 0;
             TR.TransactionSignature = EcoCoinSharedTypes.GlobalFunctions.GenerateCryptoHashForObjectAsString(TR, TR.TransactionSignerID, TR.TransactionSignerKeyID);
 
@@ -43,7 +44,6 @@ namespace EcoCoinAPI.Controllers
             TransactionRequestEnvelope TRE = new TransactionRequestEnvelope(TR, EcoCoinSharedTypes.GlobalFunctions.GenerateCryptoHashForObject(TR));
 
             GlobalFunctions.SendTransactionRequestToValidators(TRE);
-
 
             //send back a pending transaction receipt to the user so they can check on the status of their request
             PendingTransactionReceipt PTR = new PendingTransactionReceipt();
